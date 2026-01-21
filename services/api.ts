@@ -33,7 +33,7 @@ import { sanitizeHTML, sanitizeEmail, sanitizeObject } from '../utils/sanitize';
 
 /** API Configuration */
 const USE_LIVE_API = true;
-const API_URL = '/api';
+const API_URL = import.meta.env.PROD ? '/api' : 'http://localhost:5000/api';
 
 /** Prefix for all localStorage keys to avoid conflicts */
 const STORAGE_PREFIX = 'mastaba_';
