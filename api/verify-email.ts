@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import jwt from 'jsonwebtoken';
-import { db, sql } from '../lib/db';
+import * as jwt from 'jsonwebtoken';
+import { db } from '../lib/db';
 
-const SECRET_KEY = process.env.SECRET_KEY || '';
+const SECRET_KEY = process.env.SECRET_KEY || 'fallback_secret_for_dev_only';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') {
@@ -82,11 +82,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             messageAr: 'تم التحقق من البريد بنجاح'
         });
 
-    } catch (e) {
-        console.error('Verify email error:', e);
+    } catch (e: any) {
+        console.error('Verify email error:', e?.message || e);
         return res.status(500).json({
             error: 'Internal server error',
-            errorAr: 'خطأ في الخادم'
+            errorAr: 'خطأ في الخادم',
+            details: process.env.NODE_ENV === 'development' ? e?.message : undefined
         });
     }
 }

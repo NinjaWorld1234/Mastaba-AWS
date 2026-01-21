@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
+import * as jwt from 'jsonwebtoken';
+import * as bcrypt from 'bcryptjs';
 import { db } from '../lib/db';
 
-const SECRET_KEY = process.env.SECRET_KEY || '';
+const SECRET_KEY = process.env.SECRET_KEY || 'fallback_secret_for_dev_only';
 
 function generateOTP(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -113,11 +113,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             messageAr: 'تم التسجيل بنجاح. يرجى التحقق من بريدك الإلكتروني.'
         });
 
-    } catch (e) {
-        console.error('Register error:', e);
+    } catch (e: any) {
+        console.error('Register error:', e?.message || e);
         return res.status(500).json({
             error: 'Internal server error',
-            errorAr: 'خطأ في الخادم'
+            errorAr: 'خطأ في الخادم',
+            details: process.env.NODE_ENV === 'development' ? e?.message : undefined
         });
     }
 }

@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import { db } from '../lib/db';
 
-const SECRET_KEY = process.env.SECRET_KEY || '';
+const SECRET_KEY = process.env.SECRET_KEY || 'fallback_secret_for_dev_only';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'GET') {
