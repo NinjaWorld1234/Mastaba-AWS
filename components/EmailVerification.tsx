@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Mail, RefreshCw, CheckCircle2, Loader2 } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { useAuth } from './AuthContext';
+import { api } from '../services/api';
 
 interface EmailVerificationProps {
     email: string;
@@ -62,7 +63,7 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({ email, onSuccess,
         if (pastedData.length === 6) {
             const newOtp = pastedData.split('');
             setOtp(newOtp);
-            handleVerify(pastedData);
+            handleVerify(pastedData.join(''));
         }
     };
 
@@ -71,23 +72,17 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({ email, onSuccess,
         setError('');
 
         try {
-            const response = await fetch('/api/verify-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, otp: code }),
-            });
+            const { success: verifySuccess, error: vError } = await api.verifyOtp(email, code);
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(language === 'ar' ? data.errorAr || data.error : data.error);
+            if (vError) {
+                throw new Error(language === 'ar' ? vError.message || 'فشل التحقق' : vError.message || 'Verification failed');
             }
 
-            // Update token and user in localStorage
-            localStorage.setItem('authToken', data.accessToken);
-            localStorage.setItem('user', JSON.stringify(data.user));
-            localStorage.removeItem('pendingVerificationEmail');
+            if (!verifySuccess) {
+                throw new Error(language === 'ar' ? 'رمز غير صحيح' : 'Invalid code');
+            }
 
+            localStorage.removeItem('pendingVerificationEmail');
             setSuccess(true);
 
             // Wait for animation then proceed
@@ -110,16 +105,10 @@ const EmailVerification: React.FC<EmailVerificationProps> = ({ email, onSuccess,
         setError('');
 
         try {
-            const response = await fetch('/api/resend-otp', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email }),
-            });
+            const { error: rError } = await api.resendOtp(email);
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(language === 'ar' ? data.errorAr || data.error : data.error);
+            if (rError) {
+                throw new Error(language === 'ar' ? rError.message || 'فشل إعادة الإرسال' : rError.message || 'Failed to resend code');
             }
 
             // Reset countdown

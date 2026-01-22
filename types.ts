@@ -68,6 +68,18 @@ export interface User {
   bio?: string;
   /** User's account status */
   status: UserStatus;
+  /** Whether the user's email has been verified */
+  emailVerified: boolean;
+  /** User's education level */
+  educationLevel?: string;
+  /** User's WhatsApp number */
+  whatsapp?: string;
+  /** User's country */
+  country?: string;
+  /** User's age */
+  age?: number;
+  /** Gender */
+  gender?: 'male' | 'female';
 }
 
 // ============================================================================
@@ -280,6 +292,12 @@ export interface Announcement {
   priority: AnnouncementPriority;
   /** Author name */
   author: string;
+  /** Whether the announcement is currently visible */
+  isActive?: boolean;
+  /** Announcement category/type */
+  type?: string;
+  /** Creation timestamp */
+  createdAt?: string;
 }
 
 // ============================================================================

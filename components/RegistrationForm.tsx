@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User, Phone, Globe, Calendar, GraduationCap, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
+import { api } from '../services/api';
 
 interface RegistrationFormProps {
     onBack: () => void;
@@ -134,32 +135,24 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack, onSuccess }
         setError('');
 
         try {
-            const response = await fetch('/api/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: formData.email,
-                    password: formData.password,
-                    name: formData.name,
-                    nameEn: formData.nameEn || formData.name,
-                    whatsapp: formData.whatsapp,
-                    country: formData.country,
-                    age: parseInt(formData.age),
-                    gender: formData.gender,
-                    educationLevel: formData.educationLevel,
-                }),
+            const { user, error: regError } = await api.register({
+                email: formData.email,
+                password: formData.password,
+                name: formData.name,
+                nameEn: formData.nameEn || formData.name,
+                whatsapp: formData.whatsapp,
+                country: formData.country,
+                age: parseInt(formData.age),
+                gender: formData.gender,
+                educationLevel: formData.educationLevel,
             });
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(language === 'ar' ? data.errorAr || data.error : data.error);
+            if (regError) {
+                throw new Error(language === 'ar' ? regError.message || 'فشل التسجيل' : regError.message || 'Registration failed');
             }
 
-            // Store token temporarily (will be updated after verification)
-            localStorage.setItem('authToken', data.accessToken);
+            // Store email for verification step
             localStorage.setItem('pendingVerificationEmail', formData.email);
-
             onSuccess(formData.email);
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'Registration failed');
