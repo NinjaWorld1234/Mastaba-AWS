@@ -316,9 +316,30 @@ export const api = {
     },
 
     deleteUser: async (id: string): Promise<boolean> => {
-        const { error } = await supabase.from('users').delete().eq('id', id);
-        if (error) console.error('Delete user error:', error);
-        return !error;
+        try {
+            // Import supabaseAdmin dynamically to avoid issues if needed, 
+            // but it's already at the top of the file in my plan? 
+            // Wait, I didn't add it to imports in api.ts yet.
+            const { supabaseAdmin } = await import('../lib/supabase');
+
+            // 1. Delete from auth (requires service role)
+            const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
+            if (authError) {
+                console.warn('Auth deletion error (might already be deleted):', authError);
+            }
+
+            // 2. Delete from public.users (in case RLS or triggers didn't catch it)
+            const { error } = await supabase.from('users').delete().eq('id', id);
+
+            if (error) {
+                console.error('Delete user error:', error);
+                return false;
+            }
+            return true;
+        } catch (err) {
+            console.error('deleteUser failed:', err);
+            return false;
+        }
     },
 
     getCurrentUser: (): User | null => {
@@ -590,24 +611,40 @@ export const api = {
     // ========================================================================
 
     getLogs: async (): Promise<SystemActivityLog[]> => {
-        return getStoredData<SystemActivityLog[]>('activityLogs', []);
+        const { data, error } = await supabase
+            .from('activity_logs')
+            .select('*')
+            .order('timestamp', { ascending: false })
+            .limit(MAX_LOG_ENTRIES);
+
+        if (error) {
+            console.error('Get logs error:', error);
+            return [];
+        }
+
+        return data.map(l => ({
+            id: l.id,
+            userId: l.user_id || '',
+            userName: l.user_name || 'System',
+            action: l.action,
+            details: l.details || '',
+            timestamp: l.timestamp,
+            date: l.date
+        }));
     },
 
     logAction: async (userId: string, userName: string, action: string, details: string): Promise<void> => {
-        const logs = await api.getLogs();
-        const timestamp = new Date().toISOString();
-        const logEntry: SystemActivityLog = {
-            id: Date.now().toString(),
-            userId,
-            userName: sanitizeHTML(userName),
-            action: sanitizeHTML(action),
-            details: sanitizeHTML(details),
-            timestamp,
-            date: timestamp.split('T')[0]
-        };
-        logs.unshift(logEntry);
-        if (logs.length > MAX_LOG_ENTRIES) logs.pop();
-        setStoredData('activityLogs', logs);
+        const { error } = await supabase.from('activity_logs').insert([{
+            user_id: userId,
+            user_name: userName,
+            action: action,
+            details: details,
+            date: new Date().toISOString().split('T')[0]
+        }]);
+
+        if (error) {
+            console.error('Log action error:', error);
+        }
     },
 
     getCertificates: async (): Promise<Certificate[]> => {
@@ -671,6 +708,28 @@ export const api = {
             results.push(...courses.filter(c => !sanitizedQuery || c.title.toLowerCase().includes(sanitizedQuery)).map(c => ({ id: c.id, type: 'course', title: c.title, desc: c.description || '', instructor: c.instructor, thumbnail: c.thumbnail })));
         }
         return results;
+    },
+
+    // ========================================================================
+    // Cloudflare R2 Storage
+    // ========================================================================
+    r2: {
+        listFiles: async (prefix: string = ''): Promise<{ files: any[]; folders: any[]; prefix: string }> => {
+            const token = getAuthToken();
+            const url = `/api/r2/files?prefix=${encodeURIComponent(prefix)}`;
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(text || 'Failed to fetch R2 files');
+            }
+
+            return await response.json();
+        }
     }
 };
 

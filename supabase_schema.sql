@@ -170,6 +170,35 @@ CREATE TABLE IF NOT EXISTS quiz_questions (
 );
 
 -- ============================================================================
+-- Announcements Table
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS announcements (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  type TEXT DEFAULT 'info',
+  priority TEXT DEFAULT 'medium',
+  target TEXT DEFAULT 'all',
+  author TEXT,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  date DATE DEFAULT CURRENT_DATE
+);
+
+-- ============================================================================
+-- Activity Logs Table
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS activity_logs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  user_name TEXT,
+  action TEXT NOT NULL,
+  details TEXT,
+  timestamp TIMESTAMPTZ DEFAULT NOW(),
+  date DATE DEFAULT CURRENT_DATE
+);
+
+-- ============================================================================
 -- Indexes for better performance
 -- ============================================================================
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(LOWER(email));
@@ -178,6 +207,8 @@ CREATE INDEX IF NOT EXISTS idx_enrollments_user ON enrollments(user_id);
 CREATE INDEX IF NOT EXISTS idx_enrollments_course ON enrollments(course_id);
 CREATE INDEX IF NOT EXISTS idx_episodes_course ON episodes(course_id);
 CREATE INDEX IF NOT EXISTS idx_episode_progress_user ON episode_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_announcements_active ON announcements(is_active);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_user ON activity_logs(user_id);
 
 -- ============================================================================
 -- Seed Data: Default Admin User (password: admin123)
@@ -196,6 +227,7 @@ VALUES (
 ) ON CONFLICT (email) DO NOTHING;
 
 -- Seed Data: Default Student User (password: 123456)
+-- احمد محمد (ahmed@example.com)
 INSERT INTO users (id, email, password, name, name_en, role, email_verified, points, level, streak)
 VALUES (
   'a0000000-0000-0000-0000-000000000002',

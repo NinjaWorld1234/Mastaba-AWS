@@ -38,30 +38,9 @@ const R2FilePicker: React.FC<R2FilePickerProps> = ({ isOpen, onClose, onSelect, 
         setIsLoading(true);
         setError(null);
         try {
-            const token = localStorage.getItem('mastaba_currentUser')
-                ? JSON.parse(localStorage.getItem('mastaba_currentUser')!).access_token
-                : null;
+            const { api } = await import('../services/api');
+            const data = await api.r2.listFiles(prefix);
 
-            const url = `/api/r2/files?prefix=${encodeURIComponent(prefix)}`;
-            const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                const text = await response.text();
-                let errorMessage = 'Failed to fetch files';
-                try {
-                    const data = JSON.parse(text);
-                    errorMessage = data.error || data.details || errorMessage;
-                } catch (e) {
-                    errorMessage = text || errorMessage;
-                }
-                throw new Error(errorMessage);
-            }
-
-            const data = await response.json();
             setFiles(data.files || []);
             setFolders(data.folders || []);
             setCurrentPrefix(data.prefix || '');

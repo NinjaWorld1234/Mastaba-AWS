@@ -109,6 +109,35 @@ export interface Database {
                 Insert: Omit<Database['public']['Tables']['certificates']['Row'], 'id' | 'created_at'>;
                 Update: Partial<Database['public']['Tables']['certificates']['Insert']>;
             };
+            announcements: {
+                Row: {
+                    id: string;
+                    title: string;
+                    content: string;
+                    type: string;
+                    priority: string;
+                    target: string;
+                    author: string | null;
+                    is_active: boolean;
+                    date: string;
+                    created_at: string;
+                };
+                Insert: Omit<Database['public']['Tables']['announcements']['Row'], 'id' | 'created_at'>;
+                Update: Partial<Database['public']['Tables']['announcements']['Insert']>;
+            };
+            activity_logs: {
+                Row: {
+                    id: string;
+                    user_id: string | null;
+                    user_name: string | null;
+                    action: string;
+                    details: string | null;
+                    timestamp: string;
+                    date: string;
+                };
+                Insert: Omit<Database['public']['Tables']['activity_logs']['Row'], 'id' | 'timestamp'>;
+                Update: Partial<Database['public']['Tables']['activity_logs']['Insert']>;
+            };
         };
     };
 }
